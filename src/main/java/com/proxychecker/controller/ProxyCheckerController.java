@@ -1,10 +1,11 @@
 package com.proxychecker.controller;
 
 import com.proxychecker.service.ProxyCheckerService;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
-import java.util.List;
 
 @RestController
 @RequestMapping( "/api/proxy" )
@@ -17,7 +18,7 @@ public class ProxyCheckerController {
     }
 
     @GetMapping( "/check" )
-    public String checkProxies() throws IOException, InterruptedException {
-        return proxyCheckerService.checkProxies();
+    public void checkProxies() throws IOException, InterruptedException {
+        proxyCheckerService.checkProxies();
     }
 }

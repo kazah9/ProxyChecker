@@ -1,4 +1,5 @@
 README.md
+working_proxies.txt
 target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
