@@ -129,18 +129,15 @@ public class ProxyCheckerService {
             // Отправляем запрос и получаем ответ
             HttpResponse<String> response = client.send( request, HttpResponse.BodyHandlers.ofString() );
 
-            // Получаем содержимое ответа
-            String jsonResponse = response.body();
-
             // Парсим JSON-ответ
-            JsonNode jsonNode = objectMapper.readTree( jsonResponse );
+            JsonNode jsonNode = objectMapper.readTree( response.body() );
 
             // Извлекаем страну из ответа
-            return jsonNode.path( "country" ).asText( "Unknown" ); // Возвращаем страну или "Unknown"
+            return jsonNode.path( "country" ).asText( "Unknown" );
 
         } catch( IOException | InterruptedException e ) {
             logger.error( "Error while getting country for IP {}: {}", ip, e.getMessage() );
-            return "Unknown"; // В случае ошибки возвращаем "Unknown"
+            return "Unknown";
         }
     }
 

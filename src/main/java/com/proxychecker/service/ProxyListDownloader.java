@@ -9,6 +9,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static java.net.http.HttpClient.newHttpClient;
+
 public class ProxyListDownloader {
     //private static final String PROXY_SERVERS_URL = "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/socks4.txt";
     private static final String PROXY_SERVERS_URL_SOCKS4 = "https://www.proxy-list.download/api/v1/get?type=socks4";
@@ -26,12 +28,14 @@ public class ProxyListDownloader {
 
     private static List<String> getProxies( String proxyServersUrlHttps ) throws IOException, InterruptedException {
         HttpResponse<String> response;
-        try( HttpClient client = HttpClient.newHttpClient() ) {
+        try {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri( URI.create( proxyServersUrlHttps ) )
                     .build();
 
-            response = client.send( request, HttpResponse.BodyHandlers.ofString() );
+            response = newHttpClient().send( request, HttpResponse.BodyHandlers.ofString() );
+        } catch( IOException e ) {
+            throw new RuntimeException( e );
         }
         return parseProxies( response.body() );
     }
