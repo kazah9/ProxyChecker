@@ -13,7 +13,7 @@ public class AppConstants {
     public static final String GITHUB_URL_SOCKS4 = "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/socks4.txt";
 
     // Output Files
-    public static final String OUTPUT_FILE = "proxies.txt";
+    public static final String OUTPUT_FILE_NAME = "proxies.txt";
 
     // Proxy Protocol Types
     public static final String PROTOCOL_HTTP  = "HTTP";

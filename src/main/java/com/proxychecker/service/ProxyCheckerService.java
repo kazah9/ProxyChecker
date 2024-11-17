@@ -2,6 +2,7 @@ package com.proxychecker.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.proxychecker.ProxyCheckerApplication;
 import org.apache.catalina.connector.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,10 +15,14 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ProxySelector;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -31,7 +36,7 @@ public class ProxyCheckerService {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient client = HttpClient.newHttpClient();
 
-    public void checkProxies( String flag ) throws IOException, InterruptedException {
+    public void checkProxies( String flag ) throws IOException, InterruptedException, URISyntaxException {
         StringBuilder result = new StringBuilder();
 
         List<String> proxies;
@@ -152,11 +157,41 @@ public class ProxyCheckerService {
     }
 
     // Метод для записи результатов в файл
-    private void writeResultsToFile( String results ) throws IOException {
-        File file = new File( OUTPUT_FILE );
+    private void writeResultsToFile( String results ) throws IOException, URISyntaxException {
+        File file;
+        // Проверяем, если приложение запущено из IDE
+        if( isRunningInIDE() ) {
+            file = new File( OUTPUT_FILE_NAME );
+        } else {
+            Path jarDir = getJarDirectory();
+            file = new File( jarDir.toFile(), OUTPUT_FILE_NAME );
+        }
+        logger.info( "Path file {}", file );
         try( BufferedWriter writer = new BufferedWriter( new FileWriter( file, false ) ) ) {
             writer.write( results );
             writer.newLine();
+        }
+    }
+
+    // Метод для проверки, запущено ли приложение из IDE
+    private boolean isRunningInIDE() {
+        logger.info( "Checking if ProxyChecker is running in IDE" );
+        return ! System.getProperty( "user.dir" ).contains( "target" );
+    }
+
+    // Метод для проверки, запущено ли приложение из JAR файла
+    private Path getJarDirectory() {
+        try {
+            // Получаем путь к JAR файлу
+            String path = ProxyCheckerApplication.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
+            File jarFile = new File( path );
+
+            // Возвращаем родительскую директорию, где находится JAR
+            return jarFile.getParentFile().toPath();
+        } catch( Exception e ) {
+            // Обрабатываем возможные ошибки при получении пути
+            logger.error( "Error while getting jar directory: {}", e.getMessage() );
+            return Paths.get( "." ); // В случае ошибки возвращаем текущую директорию
         }
     }
 

@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 
 @RestController
 @RequestMapping( "/api/proxy" )
@@ -18,7 +19,7 @@ public class ProxyCheckerController {
     }
 
     @GetMapping( "/check" )
-    public void checkProxies() throws IOException, InterruptedException {
+    public void checkProxies() throws IOException, InterruptedException, URISyntaxException {
         proxyCheckerService.checkProxies( "socks4" );
     }
 }
