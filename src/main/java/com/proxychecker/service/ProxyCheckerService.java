@@ -19,6 +19,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import static com.proxychecker.constants.AppConstants.*;
@@ -30,11 +31,20 @@ public class ProxyCheckerService {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient client = HttpClient.newHttpClient();
 
-    public void checkProxies() throws IOException, InterruptedException {
+    public void checkProxies( String flag ) throws IOException, InterruptedException {
         StringBuilder result = new StringBuilder();
 
-        final List<String> proxies = ProxyListDownloader.loadIpsHttpProxies();
-        logger.info( "Loaded {} proxies", proxies.size() );
+        List<String> proxies;
+        if( Objects.equals( flag, "http" ) ) {
+            proxies = ProxyListDownloader.loadIpsHttpProxies();
+        } else if( Objects.equals( flag, "socks4" ) ) {
+            proxies = ProxyListDownloader.loadIpsSocks4Proxies();
+        } else {
+            logger.error( "Unknown proxy: {}", flag );
+            throw new IllegalArgumentException( "Unknown proxy: " + flag );
+        }
+
+        logger.info( "Loaded {} proxies {}", proxies.size(), flag );
 
         // Используем Vavr List для доступа к индексу
         io.vavr.collection.List<String> vavrProxies = io.vavr.collection.List.ofAll( proxies );

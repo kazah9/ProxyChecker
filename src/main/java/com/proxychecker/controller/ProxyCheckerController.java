@@ -19,6 +19,6 @@ public class ProxyCheckerController {
 
     @GetMapping( "/check" )
     public void checkProxies() throws IOException, InterruptedException {
-        proxyCheckerService.checkProxies();
+        proxyCheckerService.checkProxies( "socks4" );
     }
 }

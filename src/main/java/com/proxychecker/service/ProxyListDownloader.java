@@ -15,7 +15,7 @@ public class ProxyListDownloader {
 
     // Получает ip адреса серверов с сервера
     public static List<String> loadIpsSocks4Proxies() throws InterruptedException {
-        return getProxies( PROXY_SERVERS_URL_SOCKS4 );
+        return getProxies( GITHUB_URL_SOCKS4 );
     }
 
     // Метод для получения HTTP прокси через API

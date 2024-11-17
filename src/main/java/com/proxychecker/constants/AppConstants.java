@@ -20,7 +20,7 @@ public class AppConstants {
     public static final String PROTOCOL_HTTPS = "HTTPS";
     public static final String PROTOCOL_SOCKS = "SOCKS";
 
-    public static final int CONNECT_TIMEOUT = 2;
+    public static final int CONNECT_TIMEOUT = 10;
 
     public static final int HTTP_PROXY_ERROR = -1;
 }
