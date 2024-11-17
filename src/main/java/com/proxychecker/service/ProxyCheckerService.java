@@ -2,6 +2,7 @@ package com.proxychecker.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.catalina.connector.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -10,21 +11,21 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.ProxySelector;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+
+import static com.proxychecker.constants.AppConstants.*;
 
 @Service
 public class ProxyCheckerService {
     private static final Logger logger = LoggerFactory.getLogger( ProxyCheckerService.class );
-
-    private static final String TEST_URL = "http://httpbin.org/ip";  // Используем httpbin для тестирования IP
-    private static final String OUTPUT_FILE = "working_proxies.txt"; // Файл для рабочих прокси
-    private static final String IPINFO_API_URL = "http://ipinfo.io/";
-    private static final String GEOJS_API_URL = "https://get.geojs.io/";
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient client = HttpClient.newHttpClient();
@@ -32,64 +33,41 @@ public class ProxyCheckerService {
     public void checkProxies() throws IOException, InterruptedException {
         StringBuilder result = new StringBuilder();
 
-        final List<String> proxies = ProxyListDownloader.loadIpsHttpsProxies();
+        final List<String> proxies = ProxyListDownloader.loadIpsHttpProxies();
         logger.info( "Loaded {} proxies", proxies.size() );
 
         // Используем Vavr List для доступа к индексу
         io.vavr.collection.List<String> vavrProxies = io.vavr.collection.List.ofAll( proxies );
+
         vavrProxies.forEachWithIndex( ( proxy, index ) -> {
             logger.info( "Checking proxy {} of {}: {}", index + 1, vavrProxies.size(), proxy );
-            final String proxyType = getProxyType( proxy );
+
             final String country = getCountryByIp( proxy.split( ":" )[0] );
             if( "Unknown".equalsIgnoreCase( country ) ) {
                 return;
             }
-            // Если прокси работает (responseTime > 0), выполняем дальнейшие действия
-            Optional.of( checkProxy( proxy ) )
-                    .filter( responseTime -> responseTime != - 1 )
-                    .ifPresent( responseTime -> {
-                        // Преобразуем время ответа в секунды и форматируем до 3 знаков
-                        double responseTimeInSeconds = responseTime / 1000.0;
-                        String formattedResponseTime = String.format( "%.3f", responseTimeInSeconds );
-                        // Добавляем результат в StringBuilder
-                        result.append( proxy )
-                                .append( " - " )
-                                .append( proxyType )
-                                .append( " - " )
-                                .append( formattedResponseTime )
-                                .append( "s - " )
-                                .append( "Country: " ).append( country )
-                                .append( "\n" );
 
-                        logger.info( "Proxy {} is working. Type: {}, Response Time: {}s, Country: {}", proxy, proxyType, formattedResponseTime, country );
-                    } );
+            final String proxyType = getProxyType( proxy );
+            Optional.of( checkProxy( proxy ) )
+                    .filter( time -> time != - 1 )
+                    .ifPresent( time -> appendProxyInfo( result, proxy, proxyType, time, country ) );
         } );
 
-        // Записываем рабочие прокси в файл
-        try {
-            writeResultsToFile( result.toString() );
-        } catch( IOException e ) {
-            logger.error( "Error write results to file {}", e.getMessage() );
-        }
+        writeResultsToFile( result.toString() );
     }
 
-    // Метод для получения типа прокси (SOCKS или HTTP)
-    private String getProxyType( String proxy ) {
-        // Извлекаем порт из строки вида "ip:порт"
-        String port = proxy.split( ":" )[1];
+    private void appendProxyInfo( StringBuilder result, String proxy, String proxyType, long responseTime, String country ) {
+        // Преобразуем время ответа в секунды и форматируем до 3 знаков
+        double responseTimeInSeconds = responseTime / 1000.0;
+        String formattedResponseTime = String.format( "%.3f", responseTimeInSeconds );
 
-        // Используем switch для определения типа прокси по порту
-        switch( port ) {
-            case "1080":
-            case "1081":
-                return "SOCKS";  // Порты 1080 и 1081 — для SOCKS-прокси
-            case "80":
-                return "HTTP";   // Порт 80 — это стандарт для HTTP
-            case "443":
-                return "HTTPS";  // Порт 443 — это стандарт для HTTPS
-            default:
-                return "HTTP";   // Для всех остальных портов предполагаем HTTP
-        }
+        result.append( proxy )
+                .append( " - " ).append( proxyType )
+                .append( " - " ).append( formattedResponseTime ).append( "s - " )
+                .append( "Country: " ).append( country )
+                .append( "\n" );
+
+        logger.info( "Proxy {} is working. Type: {}, Response Time: {}s, Country: {}", proxy, proxyType, formattedResponseTime, country );
     }
 
     // Метод для проверки прокси
@@ -97,31 +75,34 @@ public class ProxyCheckerService {
         final long startTime = System.currentTimeMillis();
 
         try {
-            // Создаем запрос
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri( URI.create( TEST_URL ) )
-                    .header( "Proxy", proxy )
+            final String[] parts = proxy.split( ":" );
+            HttpClient client = HttpClient.newBuilder()
+                    .connectTimeout( Duration.ofSeconds( CONNECT_TIMEOUT ) )
+                    .proxy( ProxySelector.of( new InetSocketAddress( parts[0], Integer.parseInt( parts[1] ) ) ) )
                     .build();
 
-            // Отправляем запрос и получаем ответ
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri( URI.create( TEST_URL ) )
+                    .build();
+
+            // Отправляем запрос
             HttpResponse<String> response = client.send( request, HttpResponse.BodyHandlers.ofString() );
 
             // Время ответа
             long responseTime = System.currentTimeMillis() - startTime;
-            // Проверяем статус ответа (200 OK)
-            if( response.statusCode() == 200 ) {
+            // Проверяем статус ответа
+            if( response.statusCode() == Response.SC_OK ) {
                 return responseTime; // Возвращаем время ответа, если прокси работает
             }
         } catch( IOException | InterruptedException e ) {
-            logger.error( "Error while checking proxy {}: {}", proxy, e.getMessage() );
+            logger.error( "Error while checking proxy {}: {}", proxy, e.toString() );
         }
-        return - 1; // Прокси не работает
+        return HTTP_PROXY_ERROR;
     }
 
     // Метод для получения страны по IP
     private String getCountryByIp( String ip ) {
         try {
-            // Создаем запрос
             HttpRequest request = HttpRequest.newBuilder()
                     .uri( URI.create( GEOJS_API_URL + "v1/ip/country/" + ip + ".json" ) )
                     .build();
@@ -138,6 +119,25 @@ public class ProxyCheckerService {
         } catch( IOException | InterruptedException e ) {
             logger.error( "Error while getting country for IP {}: {}", ip, e.getMessage() );
             return "Unknown";
+        }
+    }
+
+    // Метод для получения типа прокси (SOCKS или HTTP)
+    private String getProxyType( String proxy ) {
+        // Извлекаем порт из строки вида "ip:порт"
+        String port = proxy.split( ":" )[1];
+
+        // Используем switch для определения типа прокси по порту
+        switch( port ) {
+            case "1080":
+            case "1081":
+                return PROTOCOL_SOCKS; // Порты 1080 и 1081 — для SOCKS-прокси
+            case "80":
+                return PROTOCOL_HTTP;  // Порт 80 — это стандарт для HTTP
+            case "443":
+                return PROTOCOL_HTTPS; // Порт 443 — это стандарт для HTTPS
+            default:
+                return PROTOCOL_HTTP;  // Для всех остальных портов предполагаем HTTP
         }
     }
 

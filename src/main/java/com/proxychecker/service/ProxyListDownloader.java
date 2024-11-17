@@ -9,31 +9,28 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static java.net.http.HttpClient.newHttpClient;
+import static com.proxychecker.constants.AppConstants.*;
 
 public class ProxyListDownloader {
-    //private static final String PROXY_SERVERS_URL = "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/socks4.txt";
-    private static final String PROXY_SERVERS_URL_SOCKS4 = "https://www.proxy-list.download/api/v1/get?type=socks4";
-    private static final String PROXY_SERVERS_URL_HTTPS = "https://www.proxy-list.download/api/v1/get?type=https";
 
     // Получает ip адреса серверов с сервера
-    public static List<String> loadIpsSocks4Proxies() throws IOException, InterruptedException {
+    public static List<String> loadIpsSocks4Proxies() throws InterruptedException {
         return getProxies( PROXY_SERVERS_URL_SOCKS4 );
     }
 
-    // Метод для получения SOCKS4 прокси через API
-    public static List<String> loadIpsHttpsProxies() throws IOException, InterruptedException {
-        return getProxies( PROXY_SERVERS_URL_HTTPS );
+    // Метод для получения HTTP прокси через API
+    public static List<String> loadIpsHttpProxies() throws InterruptedException {
+        return getProxies( GITHUB_URL_HTTP );
     }
 
-    private static List<String> getProxies( String proxyServersUrlHttps ) throws IOException, InterruptedException {
+    private static List<String> getProxies( String proxyServersUrlHttps ) throws InterruptedException {
         HttpResponse<String> response;
         try {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri( URI.create( proxyServersUrlHttps ) )
                     .build();
 
-            response = newHttpClient().send( request, HttpResponse.BodyHandlers.ofString() );
+            response = HttpClient.newHttpClient().send( request, HttpResponse.BodyHandlers.ofString() );
         } catch( IOException e ) {
             throw new RuntimeException( e );
         }
