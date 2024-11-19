@@ -1,6 +1,9 @@
 package com.proxychecker.constants;
 
 public class AppConstants {
+    // Threads
+    public static final Integer THREAD_POOL = 64;
+
     // API URLs
     public static final String TEST_URL                 = "http://httpbin.org/ip";
     public static final String GEOJS_API_URL            = "https://get.geojs.io/";
@@ -19,8 +22,6 @@ public class AppConstants {
     public static final String PROTOCOL_HTTP  = "HTTP";
     public static final String PROTOCOL_HTTPS = "HTTPS";
     public static final String PROTOCOL_SOCKS = "SOCKS";
-
-    public static final int CONNECT_TIMEOUT = 10;
 
     public static final int HTTP_PROXY_ERROR = -1;
 }

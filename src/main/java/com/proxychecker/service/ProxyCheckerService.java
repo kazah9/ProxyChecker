@@ -22,6 +22,10 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 import static com.proxychecker.constants.AppConstants.*;
 
@@ -29,6 +33,7 @@ import static com.proxychecker.constants.AppConstants.*;
 public class ProxyCheckerService {
     private static final Logger logger = LoggerFactory.getLogger( ProxyCheckerService.class );
 
+    private static final ExecutorService executor = Executors.newFixedThreadPool( THREAD_POOL ); // Ограничение потоков
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient client = HttpClient.newHttpClient();
 
@@ -47,26 +52,35 @@ public class ProxyCheckerService {
 
         logger.info( "Loaded {} proxies {}", proxies.size(), flag );
 
-        // Используем Vavr List для доступа к индексу
-        io.vavr.collection.List<String> vavrProxies = io.vavr.collection.List.ofAll( proxies );
-        vavrProxies.forEachWithIndex( ( proxy, index ) -> {
-            logger.info( "Checking proxy {} of {}: {}", index + 1, vavrProxies.size(), proxy );
+        // Создание списка CompletableFuture для асинхронной проверки каждого прокси
+        List<CompletableFuture<Void>> futures = proxies.stream()
+                .map( proxy -> CompletableFuture.runAsync( () -> {
+                    // Проверка прокси в отдельном потоке
+                    checkAndLogProxy( proxy, result );
+                }, executor ) ) // Используем executor для ограничения потоков
+                .collect( Collectors.toList() );
 
-            final String country = getCountryByIp( proxy.split( ":" )[0] );
-            if( "Unknown".equalsIgnoreCase( country ) ) {
-                return;
-            }
-
-            final String proxyType = getProxyType( proxy );
-            Optional.of( checkProxy( proxy ) )
-                    .filter( time -> time != - 1 )
-                    .ifPresent( time -> appendProxyInfo( result, proxy, proxyType, time, country ) );
-        } );
-
+        // Ожидание завершения всех асинхронных задач
+        CompletableFuture<Void> allOf = CompletableFuture.allOf( futures.toArray( new CompletableFuture[0] ) );
+        allOf.join(); // Блокирует до завершения всех задач
+        executor.shutdown(); // После завершения всех задач закрываем пул потоков
         //
         if( ! result.isEmpty() ) {
             writeResultsToFile( result.toString() );
         }
+    }
+
+    // Метод для проверки прокси и вывод результата по нему
+    private void checkAndLogProxy( String proxy, StringBuilder result ) {
+        final String country = getCountryByIp( proxy.split( ":" )[0] );
+        if( "Unknown".equalsIgnoreCase( country ) ) {
+            return;
+        }
+
+        final String proxyType = getProxyType( proxy );
+        Optional.of( checkProxy( proxy ) )
+                .filter( time -> time != HTTP_PROXY_ERROR )
+                .ifPresent( time -> appendProxyInfo( result, proxy, proxyType, time, country ) );
     }
 
     // Метод формирует основную информацию о прокси сервере
