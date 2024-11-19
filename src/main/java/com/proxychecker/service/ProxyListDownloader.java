@@ -9,7 +9,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.proxychecker.constants.AppConstants.*;
+import static com.proxychecker.constants.AppConstants.GITHUB_URL_HTTP;
+import static com.proxychecker.constants.AppConstants.GITHUB_URL_SOCKS4;
 
 public class ProxyListDownloader {
 
@@ -23,20 +24,22 @@ public class ProxyListDownloader {
         return getProxies( GITHUB_URL_HTTP );
     }
 
+    // Получает ip адреса прокси из источника
     private static List<String> getProxies( String proxyServersUrlHttps ) throws InterruptedException {
-        HttpResponse<String> response;
         try {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri( URI.create( proxyServersUrlHttps ) )
                     .build();
 
-            response = HttpClient.newHttpClient().send( request, HttpResponse.BodyHandlers.ofString() );
+            HttpResponse<String> response = HttpClient.newHttpClient()
+                    .send( request, HttpResponse.BodyHandlers.ofString() );
+            return parseProxies( response.body() );
         } catch( IOException e ) {
             throw new RuntimeException( e );
         }
-        return parseProxies( response.body() );
     }
 
+    // Парсит ответ от источника с ip адресами
     private static List<String> parseProxies( String responseBody ) {
         // Разделяем по новой строке, обрабатываем и возвращаем список
         return Arrays.stream( responseBody.split( "\n" ) ) // Преобразуем в поток

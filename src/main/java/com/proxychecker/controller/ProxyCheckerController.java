@@ -2,11 +2,9 @@ package com.proxychecker.controller;
 
 import com.proxychecker.service.ProxyCheckerService;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.io.IOException;
-import java.net.URISyntaxException;
 
 @RestController
 @RequestMapping( "/api/proxy" )
@@ -18,8 +16,16 @@ public class ProxyCheckerController {
         this.proxyCheckerService = proxyCheckerService;
     }
 
-    @GetMapping( "/check" )
-    public void checkProxies() throws IOException, InterruptedException, URISyntaxException {
-        proxyCheckerService.checkProxies( "socks4" );
+    /**
+     * Проверка прокси серверов из открытого источника по типу прокси
+     * @param typeProxy - тип прокси
+     */
+    @GetMapping( "/check/{typeProxy}" )
+    public void checkProxies( @PathVariable String typeProxy ) throws Exception {
+        try {
+            proxyCheckerService.checkProxies( typeProxy );
+        } catch( Exception e ) {
+            throw new Exception( e );
+        }
     }
 }

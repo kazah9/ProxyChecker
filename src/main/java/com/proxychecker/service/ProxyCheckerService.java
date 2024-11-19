@@ -3,7 +3,6 @@ package com.proxychecker.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.proxychecker.ProxyCheckerApplication;
-import org.apache.catalina.connector.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -11,18 +10,15 @@ import org.springframework.stereotype.Service;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.ProxySelector;
+import java.net.Socket;
+import java.net.SocketAddress;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Duration;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -36,7 +32,7 @@ public class ProxyCheckerService {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient client = HttpClient.newHttpClient();
 
-    public void checkProxies( String flag ) throws IOException, InterruptedException, URISyntaxException {
+    public void checkProxies( String flag ) throws Exception {
         StringBuilder result = new StringBuilder();
 
         List<String> proxies;
@@ -53,7 +49,6 @@ public class ProxyCheckerService {
 
         // Используем Vavr List для доступа к индексу
         io.vavr.collection.List<String> vavrProxies = io.vavr.collection.List.ofAll( proxies );
-
         vavrProxies.forEachWithIndex( ( proxy, index ) -> {
             logger.info( "Checking proxy {} of {}: {}", index + 1, vavrProxies.size(), proxy );
 
@@ -68,9 +63,13 @@ public class ProxyCheckerService {
                     .ifPresent( time -> appendProxyInfo( result, proxy, proxyType, time, country ) );
         } );
 
-        writeResultsToFile( result.toString() );
+        //
+        if( ! result.isEmpty() ) {
+            writeResultsToFile( result.toString() );
+        }
     }
 
+    // Метод формирует основную информацию о прокси сервере
     private void appendProxyInfo( StringBuilder result, String proxy, String proxyType, long responseTime, String country ) {
         // Преобразуем время ответа в секунды и форматируем до 3 знаков
         double responseTimeInSeconds = responseTime / 1000.0;
@@ -91,25 +90,16 @@ public class ProxyCheckerService {
 
         try {
             final String[] parts = proxy.split( ":" );
-            HttpClient client = HttpClient.newBuilder()
-                    .connectTimeout( Duration.ofSeconds( CONNECT_TIMEOUT ) )
-                    .proxy( ProxySelector.of( new InetSocketAddress( parts[0], Integer.parseInt( parts[1] ) ) ) )
-                    .build();
+            Socket socket = new Socket();
+            SocketAddress socketAddress = new InetSocketAddress( parts[0], Integer.parseInt( parts[1] ) );
 
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri( URI.create( TEST_URL ) )
-                    .build();
+            // Пробуем подключиться к прокси-серверу, 3000 миллисекунд на попытку подключения
+            socket.connect( socketAddress, 3000 );
+            socket.close();
 
-            // Отправляем запрос
-            HttpResponse<String> response = client.send( request, HttpResponse.BodyHandlers.ofString() );
-
-            // Время ответа
-            long responseTime = System.currentTimeMillis() - startTime;
-            // Проверяем статус ответа
-            if( response.statusCode() == Response.SC_OK ) {
-                return responseTime; // Возвращаем время ответа, если прокси работает
-            }
-        } catch( IOException | InterruptedException e ) {
+            // Возвращаем время ответа если прокси работает
+            return System.currentTimeMillis() - startTime;
+        } catch( Exception e ) {
             logger.error( "Error while checking proxy {}: {}", proxy, e.toString() );
         }
         return HTTP_PROXY_ERROR;
@@ -130,8 +120,7 @@ public class ProxyCheckerService {
 
             // Извлекаем страну из ответа
             return jsonNode.path( "country" ).asText( "Unknown" );
-
-        } catch( IOException | InterruptedException e ) {
+        } catch( Exception e ) {
             logger.error( "Error while getting country for IP {}: {}", ip, e.getMessage() );
             return "Unknown";
         }
@@ -140,24 +129,18 @@ public class ProxyCheckerService {
     // Метод для получения типа прокси (SOCKS или HTTP)
     private String getProxyType( String proxy ) {
         // Извлекаем порт из строки вида "ip:порт"
-        String port = proxy.split( ":" )[1];
+        final String port = proxy.split( ":" )[1];
 
-        // Используем switch для определения типа прокси по порту
-        switch( port ) {
-            case "1080":
-            case "1081":
-                return PROTOCOL_SOCKS; // Порты 1080 и 1081 — для SOCKS-прокси
-            case "80":
-                return PROTOCOL_HTTP;  // Порт 80 — это стандарт для HTTP
-            case "443":
-                return PROTOCOL_HTTPS; // Порт 443 — это стандарт для HTTPS
-            default:
-                return PROTOCOL_HTTP;  // Для всех остальных портов предполагаем HTTP
-        }
+        return switch( port ) {
+            case "1080", "1081" -> PROTOCOL_SOCKS; // Порты 1080 и 1081 — для SOCKS-прокси
+            case "80" -> PROTOCOL_HTTP;            // Порт 80 — это стандарт для HTTP
+            case "443" -> PROTOCOL_HTTPS;          // Порт 443 — это стандарт для HTTPS
+            default -> PROTOCOL_HTTP;              // Для всех остальных портов предполагаем HTTP
+        };
     }
 
     // Метод для записи результатов в файл
-    private void writeResultsToFile( String results ) throws IOException, URISyntaxException {
+    private void writeResultsToFile( String results ) throws Exception {
         File file;
         // Проверяем, если приложение запущено из IDE
         if( isRunningInIDE() ) {
@@ -184,14 +167,13 @@ public class ProxyCheckerService {
         try {
             // Получаем путь к JAR файлу
             String path = ProxyCheckerApplication.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
-            File jarFile = new File( path );
 
             // Возвращаем родительскую директорию, где находится JAR
-            return jarFile.getParentFile().toPath();
+            return new File( path ).getParentFile().toPath();
         } catch( Exception e ) {
-            // Обрабатываем возможные ошибки при получении пути
+            // В случае ошибки возвращаем текущую директорию
             logger.error( "Error while getting jar directory: {}", e.getMessage() );
-            return Paths.get( "." ); // В случае ошибки возвращаем текущую директорию
+            return Paths.get( "." );
         }
     }
 
