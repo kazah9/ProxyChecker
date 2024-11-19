@@ -41,11 +41,11 @@ public class ProxyListDownloader {
 
     // Парсит ответ от источника с ip адресами
     private static List<String> parseProxies( String responseBody ) {
-        // Разделяем по новой строке, обрабатываем и возвращаем список
-        return Arrays.stream( responseBody.split( "\n" ) ) // Преобразуем в поток
-                .map( String::trim ) // Убираем лишние пробелы
-                .filter( line -> ! line.isEmpty() ) // Оставляем только непустые строки
-                .collect( Collectors.toList() ); // Собираем результат в список
+        // Разделяет по новой строке, обрабатывает и возвращает список
+        return Arrays.stream( responseBody.split( "\n" ) ) // Преобразует в поток
+                .map( String::trim ) // Убирает лишние пробелы
+                .filter( line -> ! line.isEmpty() ) // Оставляет только непустые строки
+                .collect( Collectors.toList() ); // Собирает результат в список
     }
 
 
