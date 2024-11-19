@@ -1,6 +1,8 @@
 package com.proxychecker.controller;
 
 import com.proxychecker.service.ProxyCheckerService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,14 +20,17 @@ public class ProxyCheckerController {
 
     /**
      * Проверка прокси серверов из открытого источника по типу прокси
+     *
      * @param typeProxy - тип прокси
      */
     @GetMapping( "/check/{typeProxy}" )
-    public void checkProxies( @PathVariable String typeProxy ) throws Exception {
+    public ResponseEntity<String> checkProxies( @PathVariable String typeProxy ) {
         try {
             proxyCheckerService.checkProxies( typeProxy );
+            return ResponseEntity.ok( "Proxies checked successfully" );
         } catch( Exception e ) {
-            throw new Exception( e );
+            return ResponseEntity.status( HttpStatus.INTERNAL_SERVER_ERROR )
+                    .body( e.getMessage() );
         }
     }
 }

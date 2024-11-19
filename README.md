@@ -27,7 +27,7 @@
 
 Для запуска приложения используйте следующую команду:
 ```bash
-java -jar proxyChecker-1.0.0.jar --proxy=<тип_прокси>
+java -jar proxyChecker-x.x.x.jar --proxy=<тип_прокси>
 ```
 
 ### Параметр `--proxy`
@@ -44,16 +44,33 @@ java -jar proxyChecker-1.0.0.jar --proxy=<тип_прокси>
 - Для использования **SOCKS4** прокси (по умолчанию):
 
 ```bash
-java -jar proxyChecker-1.0.0.jar
+java -jar proxyChecker-x.x.x.jar
 ```
 - Для использования **HTTP** прокси:
 
 ```bash
-java -jar proxyChecker-1.0.0.jar --proxy=http
+java -jar proxyChecker-x.x.x.jar --proxy=http
 ```
 
 - Для использования **SOCKS4** прокси (явное указание):
 
 ```bash
-java -jar proxyChecker-1.0.0.jar --proxy=socks4
+java -jar proxyChecker-x.x.x.jar --proxy=socks4
 ```
+
+## Эндпоинт для проверки прокси-серверов
+
+### Описание
+
+Этот эндпоинт выполняет проверку прокси-серверов из открытого источника по типу прокси.
+Он позволяет пользователю проверять доступность и работоспособность прокси-серверов определенного типа.
+
+
+### Параметры пути
+
+- **`typeProxy`** (строка): Тип прокси, который нужно проверить. 
+- Это значение определяет, какой тип прокси будет проверяться. Пример: `http`, `socks5`, `socks4` и т.д.
+
+### Пример запроса
+```bash
+GET localhost:8080/api/proxy/check/{typeProxy}
