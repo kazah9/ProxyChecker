@@ -30,13 +30,18 @@ import static com.proxychecker.constants.AppConstants.*;
 public class ProxyCheckerService {
     private static final Logger logger = LoggerFactory.getLogger( ProxyCheckerService.class );
 
-    private static final ExecutorService executor = Executors.newFixedThreadPool( THREAD_POOL ); // Ограничение потоков
+    private static ExecutorService executor = Executors.newFixedThreadPool( THREAD_POOL ); // Ограничение потоков
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient client = HttpClient.newHttpClient();
 
-    public void checkProxies( String flag ) throws Exception {
+    public void checkProxies( String flag ) {
         // Открывает BufferedWriter для записи в файл
         try( BufferedWriter writer = new BufferedWriter( new FileWriter( OUTPUT_FILE_NAME, false ) ) ) {
+            // После завершения старого пула создаем новый
+            if ( executor.isTerminated() ) {
+                executor = Executors.newFixedThreadPool( THREAD_POOL );
+            }
+
             List<String> proxies;
             if( Objects.equals( flag, "http" ) ) {
                 proxies = ProxyListDownloader.loadIpsHttpProxies();
@@ -54,14 +59,15 @@ public class ProxyCheckerService {
                     .map( proxy -> CompletableFuture.runAsync( () -> {
                         // Проверка прокси в отдельном потоке
                         checkAndLogProxy( proxy, writer );
-                    }, executor ) ) // ограничивает потоки
+                    }, executor ) ) // Ограничивает потоки
                     .collect( Collectors.toList() );
 
             // Ожидание завершения всех асинхронных задач
             CompletableFuture<Void> allOf = CompletableFuture.allOf( futures.toArray( new CompletableFuture[0] ) );
             allOf.join(); // Блокирует до завершения всех задач
 
-            executor.shutdown(); // После завершения задач закрывает пул потоков
+            // После завершения задач закрывает пул потоков
+            executor.shutdown();
         } catch( Exception e ) {
             logger.error( "Error while initializing file writer: {}", e.getMessage() );
         }
