@@ -45,42 +45,55 @@ public class ProxyCheckerUI extends VerticalLayout {
 
         proxyGrid.addColumn( new ComponentRenderer<>( proxy -> {
                     Image statusImage = Objects.nonNull( proxy.getResponseTime() ) && proxy.getResponseTime().compareTo( BigDecimal.valueOf( 0.300 ) ) < 0
-                            ? new Image( "images/ok.png", "OK" )
-                            : new Image( "images/warning.png", "Warning" );
+                            ? new Image( "images/status/ok.png", "OK" )
+                            : new Image( "images/status/warning.png", "Warning" );
 
                     statusImage.setWidth( "14px" );
                     statusImage.setHeight( "14px" );
                     return statusImage;
                 } ) ).setHeader( "Статус" )
                 .setTextAlign( ColumnTextAlign.CENTER )
-                .setWidth( "75px" )
+                .setWidth( "95px" )
+                .setFlexGrow( 0 );
+
+        Image geolocation = new Image( "images/country/geolocation.png", "Geolocation" );
+        geolocation.setWidth( "17px" );
+        geolocation.setHeight( "17px" );
+        proxyGrid.addColumn( new ComponentRenderer<>( proxy -> {
+                    Image statusImage = getImageCountry( proxy.getCountry() );
+                    statusImage.setWidth( "17px" );
+                    statusImage.setHeight( "17px" );
+                    return statusImage;
+                } ) ).setHeader( geolocation )
+                .setTextAlign( ColumnTextAlign.CENTER )
+                .setWidth( "95px" )
                 .setFlexGrow( 0 );
 
         proxyGrid.addColumn( proxy -> proxy.getHost() + ":" + proxy.getPort() )
                 .setHeader( "IP:Порт" )
                 .setTextAlign( ColumnTextAlign.CENTER )
-                .setWidth( "225px" )
+                .setWidth( "245px" )
                 .setFlexGrow( 0 );
 
         proxyGrid.addColumn( ProxyDto::getProxyType )
                 .setHeader( "Тип прокси" )
                 .setTextAlign( ColumnTextAlign.CENTER )
                 .setComparator( ProxyDto::getProxyType )
-                .setWidth( "125px" )
+                .setWidth( "145px" )
                 .setFlexGrow( 0 );
 
         proxyGrid.addColumn( ProxyDto::getResponseTime )
                 .setHeader( "Время отклика (с)" )
                 .setTextAlign( ColumnTextAlign.CENTER )
                 .setComparator( ProxyDto::getResponseTime )
-                .setWidth( "175px" )
+                .setWidth( "195px" )
                 .setFlexGrow( 0 );
 
         proxyGrid.addColumn( ProxyDto::getCountry )
                 .setHeader( "Страна" )
                 .setTextAlign( ColumnTextAlign.CENTER )
                 .setComparator( ProxyDto::getCountry )
-                .setWidth( "100px" )
+                .setWidth( "125px" )
                 .setFlexGrow( 0 );
 
         proxyGrid.addThemeVariants( GridVariant.LUMO_NO_BORDER );
@@ -89,10 +102,12 @@ public class ProxyCheckerUI extends VerticalLayout {
         proxyTypeComboBox = new ComboBox<>( "Тип прокси" );
         proxyTypeComboBox.setItems( "HTTP", "SOCKS4", "SOCKS5" );
         proxyTypeComboBox.setPlaceholder( "Выберите тип прокси" );
+        proxyTypeComboBox.setAllowCustomValue( false );
 
         resourceComboBox = new ComboBox<>( "Ресурс для подключения" );
         resourceComboBox.setItems( RESOURCE_GITHUB, RESOURCE_PROXY_LIST );
         resourceComboBox.setPlaceholder( "Выберите ресурс" );
+        resourceComboBox.setAllowCustomValue( false );
 
         Button checkButton = new Button( "Проверить прокси" );
         checkButton.addClickListener( e -> checkProxies() );
@@ -125,5 +140,35 @@ public class ProxyCheckerUI extends VerticalLayout {
         } catch( Exception e ) {
             resultDiv.setText( "Ошибка: " + e.getMessage() );
         }
+    }
+
+    private Image getImageCountry( String country ) {
+        return switch( country ) {
+            case "AE" -> new Image("images/country/ae-flag.png", "AE Flag");
+            case "AR" -> new Image("images/country/ar-flag.png", "AR Flag");
+            case "AT" -> new Image("images/country/at-flag.png", "AT Flag");
+            case "BG" -> new Image("images/country/bg-flag.png", "BG Flag");
+            case "BR" -> new Image("images/country/br-flag.png", "BR Flag");
+            case "BZ" -> new Image("images/country/bz-flag.png", "BZ Flag");
+            case "CN" -> new Image("images/country/cn-flag.png", "CN Flag");
+            case "CO" -> new Image("images/country/co-flag.png", "CO Flag");
+            case "CZ" -> new Image("images/country/cz-flag.png", "CZ Flag");
+            case "DB" -> new Image("images/country/db-flag.png", "DB Flag");
+            case "DE" -> new Image("images/country/de-flag.png", "DE Flag");
+            case "EG" -> new Image("images/country/eg-flag.png", "EG Flag");
+            case "ES" -> new Image("images/country/es-flag.png", "ES Flag");
+            case "FI" -> new Image("images/country/fi-flag.png", "FI Flag");
+            case "FR" -> new Image("images/country/fr-flag.png", "FR Flag");
+            case "GB" -> new Image("images/country/gb-flag.png", "GB Flag");
+            case "HK" -> new Image("images/country/hk-flag.png", "HK Flag");
+            case "IN" -> new Image("images/country/in-flag.png", "IN Flag");
+            case "IT" -> new Image("images/country/it-flag.png", "IT Flag");
+            case "JP" -> new Image("images/country/jp-flag.png", "JP Flag");
+            case "KZ" -> new Image("images/country/kz-flag.png", "KZ Flag");
+            case "RU" -> new Image("images/country/ru-flag.png", "RU Flag");
+            case "US" -> new Image("images/country/us-flag.png", "US Flag");
+            case "CA" -> new Image("images/country/ca-flag.png", "CA Flag");
+            default -> new Image( "images/country/default-flag.png", "Default Flag" );
+        };
     }
 }
