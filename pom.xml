@@ -22,6 +22,7 @@
         <version>3.3.5</version>
     </parent>
 
+    <!-- Repositories -->
     <repositories>
         <repository>
             <id>Vaadin Directory</id>
@@ -32,6 +33,7 @@
         </repository>
     </repositories>
 
+    <!-- Dependency Management -->
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -44,11 +46,12 @@
         </dependencies>
     </dependencyManagement>
 
+    <!-- Dependencies -->
     <dependencies>
-        <!-- Vaadin -->
+
+        <!-- Vaadin Dependencies -->
         <dependency>
             <groupId>com.vaadin</groupId>
-            <!-- Replace artifactId with vaadin-core to use only free components -->
             <artifactId>vaadin</artifactId>
         </dependency>
 
@@ -69,7 +72,7 @@
             <version>2.0.0</version>
         </dependency>
 
-        <!-- Spring Boot Web & REST API -->
+        <!-- Spring Boot Dependencies -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
@@ -92,13 +95,13 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
-        <!-- Для обработки JSON запросов и ответов -->
+        <!-- JSON Handling -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
         </dependency>
 
-        <!-- HTTP Client для проверки прокси -->
+        <!-- HTTP Client for Proxy Checking -->
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
@@ -111,6 +114,7 @@
             <version>5.2</version>
         </dependency>
 
+        <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -119,13 +123,18 @@
 
     </dependencies>
 
+    <!-- Build Configuration -->
     <build>
         <defaultGoal>spring-boot:run</defaultGoal>
         <plugins>
+
+            <!-- Spring Boot Maven Plugin -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
+
+            <!-- Spotless Code Formatter Plugin -->
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
@@ -139,6 +148,8 @@
                     </java>
                 </configuration>
             </plugin>
+
+            <!-- Vaadin Maven Plugin for Frontend -->
             <plugin>
                 <groupId>com.vaadin</groupId>
                 <artifactId>vaadin-maven-plugin</artifactId>
@@ -151,6 +162,7 @@
                     </execution>
                 </executions>
             </plugin>
+
         </plugins>
     </build>
 
@@ -158,6 +170,7 @@
         <profile>
             <id>production</id>
             <dependencies>
+                <!-- Vaadin Core without vaadin-dev (production build) -->
                 <dependency>
                     <groupId>com.vaadin</groupId>
                     <artifactId>vaadin-core</artifactId>
@@ -171,6 +184,7 @@
             </dependencies>
             <build>
                 <plugins>
+                    <!-- Vaadin Plugin to build frontend during compile phase -->
                     <plugin>
                         <groupId>com.vaadin</groupId>
                         <artifactId>vaadin-maven-plugin</artifactId>
