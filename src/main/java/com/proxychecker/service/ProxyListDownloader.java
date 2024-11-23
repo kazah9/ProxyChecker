@@ -9,26 +9,20 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.proxychecker.constants.AppConstants.GITHUB_URL_HTTP;
-import static com.proxychecker.constants.AppConstants.GITHUB_URL_SOCKS4;
+import static com.proxychecker.constants.AppConstants.*;
 
 public class ProxyListDownloader {
 
     // Получает ip адреса серверов с сервера
-    public static List<String> loadIpsSocks4Proxies() throws InterruptedException {
-        return getProxies( GITHUB_URL_SOCKS4 );
-    }
-
-    // Метод для получения HTTP прокси через API
-    public static List<String> loadIpsHttpProxies() throws InterruptedException {
-        return getProxies( GITHUB_URL_HTTP );
+    public static List<String> loadProxies( String proxyType, String resource ) throws InterruptedException {
+        return getProxies( determineProxyUrl( proxyType, resource ) );
     }
 
     // Получает ip адреса прокси из источника
-    private static List<String> getProxies( String proxyServersUrlHttps ) throws InterruptedException {
+    private static List<String> getProxies( String serverUrl ) throws InterruptedException {
         try {
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri( URI.create( proxyServersUrlHttps ) )
+                    .uri( URI.create( serverUrl ) )
                     .build();
 
             HttpResponse<String> response = HttpClient.newHttpClient()
@@ -48,5 +42,22 @@ public class ProxyListDownloader {
                 .collect( Collectors.toList() ); // Собирает результат в список
     }
 
+    private static String determineProxyUrl( String proxyType, String resource ) {
+        return switch( resource.toLowerCase() ) {
+            case "github" -> switch( proxyType.toLowerCase() ) {
+                case "socks4" -> GITHUB_URL_SOCKS4;
+                case "http" -> GITHUB_URL_HTTP;
+                case "socks5" -> GITHUB_URL_SOCKS5;
+                default -> throw new IllegalArgumentException( "Unsupported proxy type: " + proxyType );
+            };
+            case "proxy-list" -> switch( proxyType.toLowerCase() ) {
+                case "socks4" -> PROXY_LIST_URL_SOCKS4;
+                case "http" -> PROXY_LIST_URL_HTTP;
+                case "socks5" -> PROXY_LIST_URL_SOCKS5;
+                default -> throw new IllegalArgumentException( "Unsupported proxy type: " + proxyType );
+            };
+            default -> throw new IllegalArgumentException( "Unknown resource: " + resource );
+        };
+    }
 
 }

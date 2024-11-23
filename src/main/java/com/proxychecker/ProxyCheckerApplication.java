@@ -8,7 +8,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class ProxyCheckerApplication implements CommandLineRunner {
+public class ProxyCheckerApplication /*implements CommandLineRunner*/ {
     @Value( "${proxy:socks4}" )
     private String proxy;
 
@@ -19,10 +19,10 @@ public class ProxyCheckerApplication implements CommandLineRunner {
         SpringApplication.run( ProxyCheckerApplication.class, args );
     }
 
-    @Override
+    /*@Override
     public void run( String... args ) throws Exception {
         proxyCheckerService.checkProxies( proxy );
-    }
+    }*/
 
 
 }

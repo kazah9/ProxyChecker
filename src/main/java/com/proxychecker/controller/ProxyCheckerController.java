@@ -22,11 +22,13 @@ public class ProxyCheckerController {
      * Проверка прокси серверов из открытого источника по типу прокси
      *
      * @param typeProxy - тип прокси
+     * @param resource  - ресурс
      */
-    @GetMapping( "/check/{typeProxy}" )
-    public ResponseEntity<String> checkProxies( @PathVariable String typeProxy ) {
+    @GetMapping( "/check/{typeProxy}/{resource}" )
+    public ResponseEntity<String> checkProxies( @PathVariable String typeProxy,
+                                                @PathVariable String resource ) {
         try {
-            proxyCheckerService.checkProxies( typeProxy );
+            proxyCheckerService.checkProxies( typeProxy, resource );
             return ResponseEntity.ok( "Proxies checked successfully" );
         } catch( Exception e ) {
             return ResponseEntity.status( HttpStatus.INTERNAL_SERVER_ERROR )
