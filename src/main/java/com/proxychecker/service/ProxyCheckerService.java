@@ -102,9 +102,12 @@ public class ProxyCheckerService {
 
         // Логирование успешной проверки
         logger.info( "Proxy {} is working. Type: {}, Response Time: {}s, Country: {}", proxy, proxyType, responseTimeInSeconds, country );
-
-        // Создаем и возвращаем объект ProxyDto
-        return new ProxyDto( host, port, proxyType, responseTimeInSeconds, country );
+        return new ProxyDto()
+                .setHost( host )
+                .setPort( port )
+                .setProxyType( proxyType )
+                .setResponseTime( responseTimeInSeconds )
+                .setCountry( country );
     }
 
     private long checkProxy( String proxy ) {
