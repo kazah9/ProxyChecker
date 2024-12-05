@@ -16,6 +16,7 @@ import com.vaadin.flow.router.Route;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
+import java.net.URL;
 import java.util.List;
 import java.util.Objects;
 
@@ -143,32 +144,11 @@ public class ProxyCheckerUI extends VerticalLayout {
     }
 
     private Image getImageCountry( String country ) {
-        return switch( country ) {
-            case "AE" -> new Image("images/country/ae-flag.png", "AE Flag");
-            case "AR" -> new Image("images/country/ar-flag.png", "AR Flag");
-            case "AT" -> new Image("images/country/at-flag.png", "AT Flag");
-            case "BG" -> new Image("images/country/bg-flag.png", "BG Flag");
-            case "BR" -> new Image("images/country/br-flag.png", "BR Flag");
-            case "BZ" -> new Image("images/country/bz-flag.png", "BZ Flag");
-            case "CN" -> new Image("images/country/cn-flag.png", "CN Flag");
-            case "CO" -> new Image("images/country/co-flag.png", "CO Flag");
-            case "CZ" -> new Image("images/country/cz-flag.png", "CZ Flag");
-            case "DB" -> new Image("images/country/db-flag.png", "DB Flag");
-            case "DE" -> new Image("images/country/de-flag.png", "DE Flag");
-            case "EG" -> new Image("images/country/eg-flag.png", "EG Flag");
-            case "ES" -> new Image("images/country/es-flag.png", "ES Flag");
-            case "FI" -> new Image("images/country/fi-flag.png", "FI Flag");
-            case "FR" -> new Image("images/country/fr-flag.png", "FR Flag");
-            case "GB" -> new Image("images/country/gb-flag.png", "GB Flag");
-            case "HK" -> new Image("images/country/hk-flag.png", "HK Flag");
-            case "IN" -> new Image("images/country/in-flag.png", "IN Flag");
-            case "IT" -> new Image("images/country/it-flag.png", "IT Flag");
-            case "JP" -> new Image("images/country/jp-flag.png", "JP Flag");
-            case "KZ" -> new Image("images/country/kz-flag.png", "KZ Flag");
-            case "RU" -> new Image("images/country/ru-flag.png", "RU Flag");
-            case "US" -> new Image("images/country/us-flag.png", "US Flag");
-            case "CA" -> new Image("images/country/ca-flag.png", "CA Flag");
-            default -> new Image( "images/country/default-flag.png", "Default Flag" );
-        };
+        String path = "images/country/" + country.toLowerCase() + "-flag.png";
+        String defaultIcon = "images/country/default-flag.png";
+        URL uri = getClass().getResource( "/static/" + path );
+        return Objects.nonNull( uri )
+                ? new Image( path, country + " Flag" )
+                : new Image( defaultIcon, "Default Flag" );
     }
 }
